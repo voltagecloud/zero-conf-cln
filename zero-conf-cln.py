@@ -3,6 +3,7 @@
 """
 
 import json
+import sys
 
 from pyln.client import Plugin
 
@@ -12,9 +13,9 @@ plugin = Plugin()
 @plugin.hook('openchannel')
 def on_openchannel(openchannel, plugin, **kwargs):
     plugin.log(repr(openchannel))
-    mindepth = int(plugin.options['zeroconf-mindepth']['value'])
+    mindepth = plugin.zeroconf_mindepth
 
-    if openchannel['id'] == plugin.options['zeroconf-allow']['value']:
+    if openchannel['id'] == plugin.zeroconf_allow_peer:
         plugin.log(f"This peer is in the zeroconf allowlist, setting mindepth={mindepth}")
         return {'result': 'continue', 'mindepth': mindepth}
     else:
@@ -80,6 +81,8 @@ plugin.add_option(
 def init(options, configuration, plugin):
     plugin.log(f"initializing with configuration: {configuration}")
     plugin.log(f"initializing with options: {options}")
+
+    plugin.zeroconf_mindepth = int(plugin.get_option('zeroconf-mindepth'))
 
     plugin.zeroconf_allow_peer = plugin.get_option('zeroconf-allow')
     if plugin.zeroconf_allow_peer is None:
