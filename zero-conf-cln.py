@@ -24,9 +24,6 @@ def on_openchannel(openchannel, plugin, **kwargs):
 
 @plugin.hook('custommsg')
 def on_custommsg(peer_id, payload, plugin, **kwargs):
-    if peer_id != plugin.zeroconf_allow_peer:
-        return {'result': 'continue'}
-
     # Decode payload
     payload_bytes = bytes.fromhex(payload)
 
@@ -47,11 +44,13 @@ def on_custommsg(peer_id, payload, plugin, **kwargs):
     if msg_id is None:
         return {'result': 'continue'}
 
+    allows = (peer_id == plugin.zeroconf_allow_peer and plugin.zeroconf_mindepth == 0)
+
     # Construct reply
     reply_contents = {
         'id': msg_id,
         'result': {
-            "allows_your_zeroconf": True,
+            "allows_your_zeroconf": allows,
         }
     }
     plugin.log(f"custommsg: Replying affirmatively to {msg_id}")
