@@ -2,7 +2,6 @@
 """Use the openchannel hook to selectively opt-into zeroconf
 """
 
-import json
 import sys
 
 from pyln.client import Plugin
@@ -20,47 +19,6 @@ def on_openchannel(openchannel, plugin, **kwargs):
         return {'result': 'continue', 'mindepth': mindepth}
     else:
         return {'result': 'continue'}
-
-
-@plugin.hook('custommsg')
-def on_custommsg(peer_id, payload, plugin, **kwargs):
-    # Decode payload
-    payload_bytes = bytes.fromhex(payload)
-
-    # Check msg type
-    msg_type = int.from_bytes(payload_bytes[:2], byteorder='big', signed=False)
-    if msg_type != 55443:
-        return {'result': 'continue'}
-
-    msg_contents = json.loads(payload_bytes[2:])
-
-    # Check msg method
-    msg_method = msg_contents.get('method')
-    if msg_method is None or msg_method != "getzeroconfinfo":
-        return {'result': 'continue'}
-
-    # Check msg id
-    msg_id = msg_contents.get('id')
-    if msg_id is None:
-        return {'result': 'continue'}
-
-    allows = (peer_id == plugin.zeroconf_allow_peer and plugin.zeroconf_mindepth == 0)
-
-    # Construct reply
-    reply_contents = {
-        'id': msg_id,
-        'result': {
-            "allows_your_zeroconf": allows,
-        }
-    }
-    plugin.log(f"custommsg: Replying affirmatively to {msg_id}")
-
-    # Encode reply
-    reply_bytes = (55445).to_bytes(2, 'big') + json.dumps(reply_contents).encode('utf-8')
-
-    plugin.rpc.sendcustommsg(peer_id, reply_bytes.hex())
-
-    return {'result': 'continue'}
 
 
 plugin.add_option(
